@@ -1,0 +1,11 @@
+
+Enviar arquivo:
+<form method="post" enctype="multipart/form-data" action=".">
+    {% csrf_token %}
+    {{ form.file }}
+    <button type="submit">Enviar</button>
+</form>
+
+{% if success %}
+    Arquivo enviado
+{% endif %}

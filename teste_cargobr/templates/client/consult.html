@@ -1,0 +1,10 @@
+
+Consulta número:
+<form method="post" enctype="multipart/form-data" action=".">
+    {% csrf_token %}
+    {{ form.number }}
+    <button type="submit">Enviar</button>
+</form>
+
+Operadora: {{ provider|default:"" }}<br/>
+Localidade: {{ locality|default:"" }}<br/>
