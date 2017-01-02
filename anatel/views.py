@@ -57,6 +57,7 @@ class UploadAPIView(generics.CreateAPIView):
         Processa o arquivo enviado. Como o arquivo é grande, ele é lido linha por linha.
         """
         with open(self.local_file_path, 'r') as data_file:
+            entries = []
             for line in data_file:
 
                 entry = Entry(
@@ -75,5 +76,6 @@ class UploadAPIView(generics.CreateAPIView):
                     longitude=line[174:182].strip(),
                     local_area_cnl=line[182:188].strip(),
                 )
+                entries.append(entry)
 
-                entry.save()
+            Entry.objects.bulk_create(entries, batch_size=100)
