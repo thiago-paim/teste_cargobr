@@ -5,6 +5,7 @@ from django.db import models
 
 class Entry(models.Model):
     """
+    Representa uma entrada CNL da Anatel
     """
     uf = models.CharField(max_length=2)
     cnl = models.CharField(max_length=4)

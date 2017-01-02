@@ -2,7 +2,7 @@
 
 from rest_framework import generics
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_201_CREATED, HTTP_500_INTERNAL_SERVER_ERROR
 
 from .models import Entry
 from .serializers import EntrySerializer, EntryFileSerializer
@@ -33,22 +33,22 @@ class UploadAPIView(generics.CreateAPIView):
     local_file_path = 'media/anatel_file.txt'
 
     def post(self, request, *args, **kwargs):
-        print('API: post()')
+        try:
+            data_file = request.data['file']
+            self.copy_uploaded_file(data_file)
+            self.create_entries()
 
-        data_file = request.data['file']
-        self.copy_uploaded_file(data_file)
-        self.create_entries()
-
-        print('API: post() finished')
-        content = {'message': 'Upload realizado com sucesso'}
-        return Response(content, status=HTTP_201_CREATED)
+            content = {'message': 'Upload realizado com sucesso'}
+            return Response(content, status=HTTP_201_CREATED)
+        except Exception as e:
+            content = {'message': e}
+            return Response(content, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
     def copy_uploaded_file(self, f):
         """
         Cria uma cópia local do arquivo para que ele possa ser lido aos poucos enquanto se popula o banco
         """
-        print('copy uploaded file')
-        with open(self.local_file_path, 'w') as destination:
+        with open(self.local_file_path, 'wb') as destination:
             for chunk in f.chunks():
                 destination.write(chunk)
 
@@ -56,16 +56,8 @@ class UploadAPIView(generics.CreateAPIView):
         """
         Processa o arquivo enviado. Como o arquivo é grande, ele é lido linha por linha.
         """
-        print('API: create_entries()')
         with open(self.local_file_path, 'r') as data_file:
             for line in data_file:
-                line = line.replace(' ', '-')
-                print('len: {}'.format(len(line)))
-                print(line.repr())
-                print('     {}, {}, {}'.format(line[16], line[17], line[18]))
-                print('     {}'.format(line[0:123]))
-                print('     {}'.format(line[61:123]))
-                print('     {}'.format(line[61:111]))
 
                 entry = Entry(
                     uf=line[0:2].strip(),
@@ -85,5 +77,3 @@ class UploadAPIView(generics.CreateAPIView):
                 )
 
                 entry.save()
-
-        print('API: create_entries() finished')
