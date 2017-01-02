@@ -2,12 +2,16 @@
 
 from rest_framework import generics
 from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED
 
 from .models import Entry
 from .serializers import EntrySerializer, EntryFileSerializer
 
 
 class ConsultNumberView(generics.ListAPIView):
+    """
+    Recebe um número como parâmetro GET, busca o Entry relacionado e retorna a operadora e a localidade do número
+    """
     queryset = Entry.objects.all()
     serializer_class = EntrySerializer
 
@@ -21,22 +25,47 @@ class ConsultNumberView(generics.ListAPIView):
 
 
 class UploadAPIView(generics.CreateAPIView):
+    """
+    Recebe um arquivo .txt contendo os dados CNL e popula o banco de dados
+    """
     queryset = Entry.objects.all()
     serializer_class = EntryFileSerializer
+    local_file_path = 'media/anatel_file.txt'
 
     def post(self, request, *args, **kwargs):
+        print('API: post()')
+
         data_file = request.data['file']
-        self.import_anatel_data(data_file)
-        # Retornar
+        self.copy_uploaded_file(data_file)
+        self.create_entries()
 
-    def import_anatel_data(self, data_file):
-        """
-        Processa o arquivo enviado. Como o arquivo é bem grande, ele é lido em blocos para não ocupar toda a memória. Como todos os campos tem temanho fixo, não há necessidade de separar as palavras.
-        """
-        for chunk in data_file.chunks():
-            lines = chunk.splitlines()
+        print('API: post() finished')
+        content = {'message': 'Upload realizado com sucesso'}
+        return Response(content, status=HTTP_201_CREATED)
 
-            for line in lines:
+    def copy_uploaded_file(self, f):
+        """
+        Cria uma cópia local do arquivo para que ele possa ser lido aos poucos enquanto se popula o banco
+        """
+        print('copy uploaded file')
+        with open(self.local_file_path, 'w') as destination:
+            for chunk in f.chunks():
+                destination.write(chunk)
+
+    def create_entries(self):
+        """
+        Processa o arquivo enviado. Como o arquivo é grande, ele é lido linha por linha.
+        """
+        print('API: create_entries()')
+        with open(self.local_file_path, 'r') as data_file:
+            for line in data_file:
+                line = line.replace(' ', '-')
+                print('len: {}'.format(len(line)))
+                print(line.repr())
+                print('     {}, {}, {}'.format(line[16], line[17], line[18]))
+                print('     {}'.format(line[0:123]))
+                print('     {}'.format(line[61:123]))
+                print('     {}'.format(line[61:111]))
 
                 entry = Entry(
                     uf=line[0:2].strip(),
@@ -56,3 +85,5 @@ class UploadAPIView(generics.CreateAPIView):
                 )
 
                 entry.save()
+
+        print('API: create_entries() finished')
