@@ -56,7 +56,7 @@ class UploadAPIView(generics.CreateAPIView):
         """
         Processa o arquivo enviado. Como o arquivo é grande, ele é lido linha por linha.
         """
-        with open(self.local_file_path, 'r') as data_file:
+        with open(self.local_file_path, 'r', encoding='latin1') as data_file:
             entries = []
             for line in data_file:
 
